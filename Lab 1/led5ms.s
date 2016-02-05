@@ -5,9 +5,8 @@
 .equ TURNON, 0xFF
 .equ TURNOFF, 0x00
 
-.equ COUNT1, 0x64
-.equ COUNT2, 0xC8
-.equ COUNT3, 0xC8
+.equ COUNT1, 0x4E
+.equ COUNT2, 0xFF
 
 init:
 	ldi r16, 0xFF           ; value for pin 5 writable
@@ -31,18 +30,10 @@ loop:
 	rjmp main               ; go to main loop if counter 1 == 0
 
 innerloop:
-	dec r30                 ; 1
-	ldi r31, COUNT3         ; 1
-	cpse r30, r17           ; 1 , 2 if skips
-	rjmp innermostloop      ; 2
-	brne innerloop          ; 2 end 1
-	rjmp loop               ; 2
-
-innermostloop:
-	dec r31                    ; 1 
-	nop                        ; 1
-	brne innermostloop         ; 2 end 1        
-	rjmp innerloop             ; 2
+	dec r30                   ; 1 
+	nop                       ; 1
+	brne innerloop            ; 2 end 1        
+	rjmp loop                 ; 2
 
 
 

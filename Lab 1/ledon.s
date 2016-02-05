@@ -1,10 +1,10 @@
 .equ PORTB, 0x05
 .equ DDRB, 0x04
-.equ TURNON, 0xFF
-.equ TURNOFF, 0x00
+.equ TURNON, 0x20
+.equ TURNOFF, 0x20
 
 main:
-	ldi r16, 0xFF            ; Setup pin 5 port B to writable
+	ldi r16, 0xFF           ; Setup pin 5 port B to writable
 	out DDRB, r16           ;
 	ldi r16, TURNON         ; Replace with TURNOFF
 	out PORTB, r16          ;
