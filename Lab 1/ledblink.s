@@ -1,8 +1,8 @@
 .equ PORTB, 0x05
-.equ DDRB, 0x04
-.equ PINB, 0x03
+.equ DDRB,  0x04
+.equ PINB,  0x03
 
-.equ TURNON, 0xFF
+.equ TURNON,  0xFF
 .equ TURNOFF, 0x00
 
 .equ COUNT1, 0x64
