@@ -27,3 +27,8 @@ void loop()
   Serial.print("Z: "); Serial.println((int)gyro.data.z); Serial.print(" ");
   delay(100);
 }
+
+
+
+
+

@@ -30,7 +30,7 @@ void loop()
   //Serial.print("Z: "); Serial.println(gyro.data.z); Serial.print(" ");
   delay(10);
   z_dps = gyro.data.z;//only read magnitude;
-  z_pwm = (z_dps+512)/4; 
+  z_pwm = z_dps/4 + 128; 
   //Serial.print("z_pwm:  "); 
   Serial.println(z_pwm);Serial.print(" ");
   analogWrite(z_pin, z_pwm);
