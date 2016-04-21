@@ -1,3 +1,9 @@
+
+
+
+
+
+
 .equ PORTB, 0x05
 .equ DDRB, 0x04
 .equ PINB, 0x03

@@ -6,7 +6,6 @@ full speed clockwise signal with pin 12.
 #include <Servo.h> // Include servo library
 
 //Declare Servos
-Servo servoLeft;
 Servo servoRight; 
 
 //Constants for IR threshold and pin numbers
@@ -21,13 +20,10 @@ int period = 0;
 
 void setup() // Built in initialization block
 {
-servoLeft.attach(13); // Attach left signal to pin 13
 servoRight.attach(12); // Attach right signal to pin 12
-servoLeft.writeMicroseconds(Serial.read()); // 1.7 ms -> counterclockwise
-servoRight.writeMicroseconds(1500); // 1.3 ms -> clockwise
+servoRight.writeMicroseconds(1300); // 1.3 ms -> clockwise
 Serial.begin(9600);
 }
-
 
 void loop() // Main loop auto-repeats
 {
