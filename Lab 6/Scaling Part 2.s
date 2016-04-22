@@ -168,8 +168,6 @@ troubleshootsetup:
     out DDRC, r16
 
 
-
-
     ret                        ; Exit subroutine and go to return address
 
 
@@ -177,29 +175,24 @@ adcinterrupt:
     in r16 , SREG              ; Store current Status Register values
     push r16                   ; Push to stack
 
-
     sbi PINB , B5              ; Toggle the LED
 
-       
-    lds r25, ADCH   
-    ;Math
+    ;load Analog value 
+    lds r25, ADCH 
 
-    ;Tonys try--------------------------------------------
+    ;divide by 10
+    ldi r26, 51
+    mul r25, r26
+    inc r1
+    lsr r1
 
-    ;addition part
-    ldi r20,0b00000001 ; 325 upper 8 bits  
-    ldi r21,0b01000101 ; 325 lower 8 bits
-    ldi r22,0x56       ; upper 8 of (x/10) 
-    ldi r23,0x78       ; lower 8 of (x/10)
-    add r21,r23      ;lower 8 bit answer
-    adc r20,r22      ;upper 8 bit answer
+    mov r25, r1
+
+
     
     ;-----------------------------------------------------
 
-    ldi r26, 51
-    mul r25, 26
-    inc r1
-    lsr r1
+
     mov r28, r1
     mov r30, r1
 
@@ -208,8 +201,6 @@ adcinterrupt:
 
     ;Right Wheel
     ;Reverse on high
-
-    
 
     mov r16, r28
 
@@ -222,13 +213,22 @@ adcinterrupt:
     ;Left Wheel
     ;Forward on high
 
-    mov r16, r30
 
-    sts OCR1BH, 0x00
+    ;add 325
+    ldi r20,0b00000001 ; 325 upper 8 bits  
+    ldi r21,0b01000101 ; 325 lower 8 bits
+    ldi r22,0x00       ; upper 8 of (x/10) 
+    ldi r23,r25       ; lower 8 of (x/10)
+    add r21,r23      ;lower 8 bit answer
+    adc r20,r22      ;upper 8 bit answer
+
+    mov r17, r20
+    mov r16, r21
+
+    sts OCR1BH, r17
     sts OCR1BL, r16
 
     sbi DDRB, 2
-
 
     pop r16                    ; Recover Status Register values from the stack
     out SREG , r16             ; Restore the Status Register
