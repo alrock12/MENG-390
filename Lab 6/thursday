@@ -1,12 +1,23 @@
+;AHHH Attempt
 
-;-----------------------------SETUP-----------------------------
+; Sample code to toggle the on-board LED on the Arduino in response to
+; a rising edge on the INT0 pin. So, if you connect a variable voltage
+; input to INT0, and switch the voltage between 0V and 5V (on-state),
+; the LED will toggle every time that you go from 0V to 5V, but will not
+; respond when you go back down to 0V.
+; - Madhusudhan Venkadesan, 2016.
+
+; Comments and Notes Changed by Amy Rockwood April 16, 2016
+
+
+
 ; Set Stack Pointer Register (16-bit: high and low) to end of SRAM 
 ; Stack is used to store and restore the program counter location when going to an interrupt or subroutine
 .equ SPH , 0x3E
 .equ SPL , 0x3D
 .equ RAMEND , 0x08FF 
 
-; I/O Registers
+; I/O registers
 .equ PINB , 0x03
 .equ DDRB , 0x04
 .equ PORTB , 0x05
@@ -18,23 +29,12 @@
 .equ B5 , 5
 .equ INT0 , 2
 
-;16-Bit PWM Registers
-.equ TCCR1A, 0x80
-.equ TCCR1B, 0x81
-.equ ICR1L, 0x86
-.equ ICR1H, 0x87
-.equ OCR1AL, 0x88
-.equ OCR1AH, 0x89
-.equ OCR1BL, 0x8A/ 
-.equ OCR1BH, 0x8B
-
-
-;External Interrupt Register Addresses
+; External Interrupt Register Addresses
 .equ EICRA , 0x69             ; Control Register A
 .equ EIMSK , 0x1D             ; Mask Register
 .equ EIFR , 0x1C              ; Flag Register
 
-;External Interrupt Bits
+; External interrupt bits
 .equ ISC11 , 3                ; Sense Control for INT1
 .equ ISC10 , 2                ; Sense Control for INT1
 .equ ISC01 , 1                ; Sense Control for INT0
@@ -47,30 +47,12 @@
 .equ INTF0 , 0                ; Flag for INT0
 
 
-
-;Wheel Constants
-.equ HI, 0x01
-.equ L_FOR, 0xA9
-.equ L_REV, 0x45
-.equ R_FOR, 0x45
-.equ R_REV, 0xA9
-
-
-;-----------------------------PROGRAM ADDRESSES-----------------------------
 .org 0x0000                   ; RESET 0x0000 Program Address
 	rjmp reset
-
-
 .org 0x0004                   ; INT0 0x0002 Program Address
 	rjmp runint0
-
-
 .org 0x0068                   ; First available address after assigned interrupt vectors 
 
-
-
-
-;-----------------------------LABELLED ROUTINES-----------------------------
 reset:
 	cli                       ; Disable all interrupts while setting things up
 
@@ -80,56 +62,11 @@ reset:
 	out SPL , r16
 
 	rcall interruptsetup      ; Subroutine Call to interruptsetup and remember return address
-	rcall pwmsetup 
 
 	sei                       ; Globally enable interrupts
 
-
-
-
 main:
 	rjmp main                 ; Currently empty loop
-
-
-
-pwmsetup:
-    ldi r31, HI        
-    ldi r30, L_FOR
-
-    ldi r29, HI           ; set compare for duty cycle 
-    ldi r28, R_FOR
-
-
-    ldi r16,0b10100010      ;  FASM PWM Mode 15
-    sts TCCR1A,r16
-    ldi r16,0b00011011      ; Internal Clock no prescaling
-    sts TCCR1B,r16
-
-    ;for use with 16-bit clock
-    ldi r17, 0x13            ; set top to 5000 for frequency of 50 Hz
-    ldi r16, 0x88
-    sts ICR1H, r17
-    sts ICR1L, r16
-
-    mov r17, r29
-    mov r16, r28
-
-    sts OCR1AH, r17
-    sts OCR1AL, r16
-
-    sbi DDRB, 1
-
-    mov r17, r31
-    mov r16, r30
-
-    sts OCR1BH, r17
-    sts OCR1BL, r16
-
-    sbi DDRB, 2
-
-    ret
-
-
 
 
 interruptsetup:
@@ -149,45 +86,12 @@ interruptsetup:
 
 	ret                        ; Exit subroutine and go to return address
 
-
-
 runint0:
 	in r16 , SREG              ; Store current Status Register values
 	push r16                   ; Push to stack
 
-
 	sbi PINB , B5              ; Toggle the LED
-
-
-
-
-	;Update PWM
-    ldi r31, HI        
-    ldi r30, L_REV
-
-    ldi r29, HI         ; set compare for duty cycle 
-    ldi r28, R_REV
-
-    mov r17, r29
-    mov r16, r28
-
-    sts OCR1AH, r17
-    sts OCR1AL, r16
-
-    sbi DDRB, 1
-
-    mov r17, r31
-    mov r16, r30
-
-    sts OCR1BH, r17
-    sts OCR1BL, r16
-
-    sbi DDRB, 2
-
-
 
 	pop r16                    ; Recover Status Register values from the stack
 	out SREG , r16             ; Restore the Status Register
 	reti                       ; Exit the interrupt service routine
-
-

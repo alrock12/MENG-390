@@ -12,9 +12,9 @@
 .equ PORTB , 0x05
 .equ DDRD , 0x0A
 .equ PORTD , 0x0B
-.equ PINC, 0x06
-.equ DDRC, 0x07
 .equ PORTC, 0x08
+.equ DDRC, 0x07
+
 .equ SREG , 0x3F 
 
 ; I/O bits
@@ -41,6 +41,7 @@
 .equ DIDR0, 0x7E
 
 .equ ADIF, 4
+
 
 
 ;External Interrupt Register Addresses
@@ -75,11 +76,9 @@
 	rjmp reset
 
 .org 0x0054                   ; ADC Conversion Complete Interrupt 0x002A
-    ;rjmp updatepwm
-
+    rjmp adcinterrupt
 
 .org 0x0068                   ; First available address after assigned interrupt vectors 
-
 
 
 
@@ -93,7 +92,8 @@ reset:
 	out SPL , r16
 
 	rcall pwmsetup 
-	;rcall adcsetup
+	rcall troubleshootsetup
+	rcall adcsetup
 
 	sei                       ; Globally enable interrupts
 
@@ -105,23 +105,12 @@ main:
 
 
 
-adcsetup:
-	
-	ldi r16, 0b01000000     ;selects analog input A0
-	sts ADMUX, r16
-	ldi r16, 0b11101111      ;enables, starts, sources, and prescales 128
-	sts ADCSRA, r16  
-	ldi r16, 0b00000000      ;free running mode
-	sts ADCSRB, r16
-
-	ret
-
 pwmsetup:
-    ldi r31, HI      
-    ldi r30, R_FOR  
+    ldi r31, HI        
+    ldi r30, L_FOR   
 
     ldi r29, HI           ; set compare for duty cycle 
-    ldi r28, L_FOR 
+    ldi r28, R_FOR
 
 
 
@@ -154,17 +143,48 @@ pwmsetup:
 
     ret
 
+adcsetup:
+	
+	ldi r16, 0b01000000     ;selects analog input A0
+	sts ADMUX, r16
+	ldi r16, 0b11101010      ;enables, starts, sources, and prescales 128
+	sts ADCSRA, r16  
+	ldi r16, 0b00000000      ;free running mode
+	sts ADCSRB, r16
 
-updatepwm:
+	ret
+
+troubleshootsetup:
+                              ; Setup the on-board LED as a writable pin.
+	ldi r16 , 0xFF         ; 
+	out DDRB , r16            ; Set PORTB5 as output
+	cbi PORTB , B5            ; Clear bit value, LED OFF
+
+	ldi r16, 0x00
+	out DDRC, r16
+
+
+
+
+	ret                        ; Exit subroutine and go to return address
+
+
+adcinterrupt:
 	in r16 , SREG              ; Store current Status Register values
 	push r16                   ; Push to stack
 
-	;Update PWM
-    ldi r31, HI        
-    ldi r30, L_REV
 
-    ldi r29, HI       ; set compare for duty cycle 
-    ldi r28, R_REV
+	sbi PINB , B5              ; Toggle the LED
+
+
+    lds r30, ADCL        
+    lds r31, ADCH   
+
+    lds r28, ADCL          ; set compare for duty cycle 
+    lds r29, ADCH
+
+    ldi r16, 0b11111010 ;enables, starts, sources, and prescales 128
+	sts ADCSRA, r16  
 
     mov r17, r29
     mov r16, r28
@@ -181,6 +201,7 @@ updatepwm:
     sts OCR1BL, r16
 
     sbi DDRB, 2
+
 
 	pop r16                    ; Recover Status Register values from the stack
 	out SREG , r16             ; Restore the Status Register
