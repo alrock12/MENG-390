@@ -44,28 +44,7 @@
 
 .equ ADIF, 4
 
-
-
-;External Interrupt Register Addresses
-.equ EICRA , 0x69             ; Control Register A
-.equ EIMSK , 0x1D             ; Mask Register
-.equ EIFR , 0x1C              ; Flag Register
-
-;External Interrupt Bits
-.equ ISC11 , 3                ; Sense Control for INT1
-.equ ISC10 , 2                ; Sense Control for INT1
-.equ ISC01 , 1                ; Sense Control for INT0
-.equ ISC00 , 0                ; Sense Control for INT0
-
-.equ INT1MSK , 1              ; Mask for INT1
-.equ INT0MSK , 0              ; Mask for INT0
-
-.equ INTF1 , 1                ; Flag for INT1
-.equ INTF0 , 0                ; Flag for INT0
-
-
-
-;Wheel Constants
+;Wheel Constants based on 50 Hz
 .equ HI, 0x01
 .equ L_FOR, 0xA9
 .equ L_REV, 0x45
@@ -74,7 +53,7 @@
 
 ;Math Constants
 .equ HIGH, 0b110101001 ;425
-.equ LOW,  0b101000101  ;325
+.equ LOW,  0b101000101 ;325
 
 
 ;-----------------------------PROGRAM ADDRESSES-----------------------------
@@ -97,32 +76,36 @@ reset:
     ldi r16 , lo8(RAMEND)     ; Set up stack pointer; lo 8-bits to end of SRAM
     out SPL , r16
 
-    rcall pwmsetup 
     rcall troubleshootsetup
+    rcall pwmsetup 
     rcall adcsetup
 
     sei                       ; Globally enable interrupts
-
-
 
 
 main:
     rjmp main                 ; Currently empty loop
 
 
+troubleshootsetup:
+
+    ldi r16 , 0xFF            ; enable port B outputs
+    out DDRB , r16            ; Set PORTB5 as output
+    cbi PORTB , B5            ; Clear bit value, LED OFF
+
+    ldi r16, 0x00             ; set port C as inputs
+    out DDRC, r16
+
+    ret                        ; Exit subroutine and go to return address
+
+
 
 pwmsetup:
-    ldi r31, HI        
-    ldi r30, L_FOR   
 
-    ldi r29, HI           ; set compare for duty cycle 
-    ldi r28, R_FOR
-
-
-
-    ldi r16,0b10100010      ;  FASM PWM Mode 15
+    ;16-bit PWM Timer 1
+    ldi r16,0b10100010      ; FAST PWM Mode 15
     sts TCCR1A,r16
-    ldi r16,0b00011011      ; Internal Clock no prescaling
+    ldi r16,0b00011011      ; Internal Clock, prescaling 64
     sts TCCR1B,r16
 
     ;for use with 16-bit clock
@@ -131,16 +114,20 @@ pwmsetup:
     sts ICR1H, r17
     sts ICR1L, r16
 
-    mov r17, r29
-    mov r16, r28
+
+    ;Output Right
+    ldi r17, HI
+    ldi r16, R_FOR
 
     sts OCR1AH, r17
     sts OCR1AL, r16
 
     sbi DDRB, 1
 
-    mov r17, r31
-    mov r16, r30
+
+    ;Output Left
+    ldi r17, HI
+    ldi r16, L_FOR
 
     sts OCR1BH, r17
     sts OCR1BL, r16
@@ -149,9 +136,11 @@ pwmsetup:
 
     ret
 
+
+
 adcsetup:
     
-    ldi r16, 0b01100000     ;selects analog input A0
+    ldi r16, 0b01100000      ;selects AREF, Left Adjust, analog input A0
     sts ADMUX, r16
     ldi r16, 0b11101010      ;enables, starts, sources, and prescales 4
     sts ADCSRA, r16  
@@ -160,17 +149,6 @@ adcsetup:
 
     ret
 
-troubleshootsetup:
-                              ; Setup the on-board LED as a writable pin.
-    ldi r16 , 0xFF         ; 
-    out DDRB , r16            ; Set PORTB5 as output
-    cbi PORTB , B5            ; Clear bit value, LED OFF
-
-    ldi r16, 0x00
-    out DDRC, r16
-
-
-    ret                        ; Exit subroutine and go to return address
 
 
 adcinterrupt:
@@ -181,25 +159,21 @@ adcinterrupt:
 
     ;load Analog value 
     lds r25, ADCH 
+    ldi r16, 0b11111010        ;clear flag
+    sts ADCSRA, r16  
 
     ;divide by 2.5
     ldi r26, 102
     mul r25, r26
     inc r1
 
-
-    ;mov r24, r0
-    mov r25, r1
+    ;copy for manipulation
+    mov r28, r1              
+    mov r30, r1
 
     
     ;-----------------------------------------------------
 
-
-    mov r28, r1
-    mov r30, r1
-
-    ldi r16, 0b11111010        ;clear flag
-    sts ADCSRA, r16  
 
     ;Right Wheel
     ;Reverse on high
@@ -211,11 +185,8 @@ adcinterrupt:
     sub r21,r23      ;lower 8 bit answer
     sbc r20,r22      ;upper 8 bit answer
 
-    mov r16, r21
-    mov r17, r20
-
-    sts OCR1AH, r17
-    sts OCR1AL, r16
+    sts OCR1AH, r20
+    sts OCR1AL, r21
 
     sbi DDRB, 1
 
@@ -223,22 +194,20 @@ adcinterrupt:
     ;Left Wheel
     ;Forward on high
 
-
     ;add 325
-    ldi r20,0b00000001 ; 325 upper 8 bits  
-    ldi r21,0b01000101 ; 325 lower 8 bits
+    ldi r20, hi8(LOW) ; 325 upper 8 bits  
+    ldi r21, lo8(LOW) ; 325 lower 8 bits
     ldi r22, 0x00       ; upper 8 of (x/10) 
     mov r23, r25       ; lower 8 of (x/10)
     add r21,r23      ;lower 8 bit answer
     adc r20,r22      ;upper 8 bit answer
 
-    mov r17, r20
-    mov r16, r21
-
-    sts OCR1BH, r17
-    sts OCR1BL, r16
+    sts OCR1BH, r20
+    sts OCR1BL, r21
 
     sbi DDRB, 2
+
+
 
     pop r16                    ; Recover Status Register values from the stack
     out SREG , r16             ; Restore the Status Register
