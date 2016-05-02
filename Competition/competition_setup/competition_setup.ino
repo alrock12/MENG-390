@@ -4,12 +4,13 @@
 //Right Motor pin 9-12
 
 //Inputs
-//Gyroscope A0
-//Hall Effect Sensor A1
-//Left Outer IR Sensor A5
-//Left Inner IR Sensor A4
+//Left Outer IR Sensor A0
+//Left Inner IR Sensor A1
+//Right InnerIR Sensor A2
 //Right Outer IR Sensor A3
-//Right Outer IR Sensor A2
+//Hall Effect Sensor A4
+//Gyroscope A5
+
 
 
 #include <Servo.h> // Include servo library
